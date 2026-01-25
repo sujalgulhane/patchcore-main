@@ -1,0 +1,36 @@
+patch core
+weights file,./data/weights/wide_resnet50_size224_param_0.1_9_wood.pth
+device,cpu
+backborn,wide_resnet50
+coreset_sampling_ratio,0.1
+num_neighbors,9
+Layers,layer2,layer3
+
+threshould,0.5
+
+,,,,,,,,precision,recall,f1_score
+,,,,,,0,Normal,0.5,1.0,0.6666666666666666
+,,,,,,1,Abnormal,0.0,0.0,0.0
+,,,,,,,macro-mean,0.25,0.5,0.3333333333333333
+
+,,,,,,confusion matrix
+,,,,,,,Predict
+,,,,,,,Normal,Abnormal
+,,,,,Label,Normal,1,0
+,,,,,,Abnormal,1,0
+
+benchmark [ms]
+,get features,169.5249080657959
+,average pooling,15.62047004699707
+,concat features,0.0
+,calcu distance,16.625642776489258
+,create anomaly map,0.0
+,normalize anomaly map,0.0
+,total,201.77102088928223
+
+total time [ms]
+,total time,201.77102088928223
+
+No,image,Label,Predict,Result
+1,IMG_3790_0102.png,0,0,o
+2,IMG_3790_0200.png,1,0,x
