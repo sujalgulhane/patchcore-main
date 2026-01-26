@@ -16,7 +16,7 @@ from models.patch_core import visualize
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
 DEFAULT_WEIGHTS = Path(
-    r"E:\Downloads\patchcore-main\patchcore-main\data\weights\wide_resnet50_size224_param_0.1_9_wood.pth"
+    r"data/weights/wide_resnet50_size224_param_0.1_9_wood.pth"
 )
 
 
