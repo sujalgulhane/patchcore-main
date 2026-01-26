@@ -17,7 +17,7 @@ from models.patch_core import visualize
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent.parent  
 # Navigate: src/ -> patchcore-main/ -> patchcore-main/ -> repo root
-DEFAULT_WEIGHTS = Path("/mount/src/patchcore-main/data/weights/wide_resnet50_size224_param_0.1_9_wood.pth")
+DEFAULT_WEIGHTS = Path("/patchcore-main/data/weights/wide_resnet50_size224_param_0.1_9_wood.pth")
 # ---------------------------
 # MODEL LOADING
 # ---------------------------
