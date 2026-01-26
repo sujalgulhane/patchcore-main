@@ -13,11 +13,10 @@ from models.patch_core import visualize
 # ---------------------------
 # CONFIG
 # ---------------------------
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
-DEFAULT_WEIGHTS = Path(
-    r"data/weights/wide_resnet50_size224_param_0.1_9_wood.pth"
-)
+
+PROJECT_ROOT = Path(__file__).parent.parent.parent  # /mount/src/patchcore-main
+DEFAULT_WEIGHTS = PROJECT_ROOT / "data" / "weights" / "wide_resnet50_size224_param_0.1_9_wood.pth"
 
 
 # ---------------------------
