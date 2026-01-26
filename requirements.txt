@@ -1,0 +1,31 @@
+# Core deep learning
+torch>=1.13.0
+torchvision>=0.14.0
+
+# Scientific computing
+numpy>=1.19.0
+scipy>=1.5.0
+
+# Machine learning utilities
+scikit-learn>=0.24.0
+
+# Computer vision
+opencv-python>=4.5.0
+Pillow>=8.0.0
+
+# Progress & CLI
+tqdm>=4.40.0
+
+# Optional visualization (if used)
+matplotlib>=3.1.0
+
+# Optional but useful dependencies
+faiss-cpu   # or faiss-gpu if using GPU indexing
+torchmetrics  # helps with evaluation metrics
+
+# Config parsing if necessary
+omegaconf>=2.0.0
+
+# Additional utilities (depending on your repo)
+# timm (common for backbone models)
+timm>=0.4.0
