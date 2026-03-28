@@ -13,7 +13,7 @@ scikit-learn>=0.24.0
 
 
 # Computer vision
-opencv-python>=4.5.0
+opencv-python-headless  # No GUI deps
 Pillow>=8.0.0
 
 # Progress & CLI
