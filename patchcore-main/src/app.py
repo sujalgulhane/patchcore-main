@@ -30,18 +30,38 @@ from models.patch_core import PatchCore
 from models.patch_core import visualize
 
 # ─────────────────────────────────────────────
-# CONFIG  — all paths relative to this file
+# CONFIG  — portable path resolution
+# Works for:
+#   Local dev:        <repo>/src/app.py
+#   Streamlit Cloud:  /mount/src/<repo>/<repo>/src/app.py
 # ─────────────────────────────────────────────
-# app.py lives in  <repo>/src/
-# weights live in  <repo>/src/data/weights/
-SRC_DIR     = Path(__file__).resolve().parent          # <repo>/src
-WEIGHTS_DIR = SRC_DIR / "data" / "weights"
-OUTPUT_DIR  = SRC_DIR / "data" / "output" / "streamlit"
+SRC_DIR = Path(__file__).resolve().parent   # directory containing app.py
+
+def _find_weights_dir() -> Path:
+    """Walk up from app.py until we find a data/weights folder."""
+    candidate = SRC_DIR
+    for _ in range(6):
+        w = candidate / "data" / "weights"
+        if w.is_dir():
+            return w
+        candidate = candidate.parent
+    # Fallback: create it next to app.py so the uploader can save there
+    fallback = SRC_DIR / "data" / "weights"
+    fallback.mkdir(parents=True, exist_ok=True)
+    return fallback
+
+WEIGHTS_DIR = _find_weights_dir()
+OUTPUT_DIR  = WEIGHTS_DIR.parent / "output" / "streamlit"
+
+WEIGHT_FILES = {
+    "Wide-ResNet50  (best accuracy)": "wide_resnet50_size224_param_0.1_9_wood.pth",
+    "ResNet50       (balanced)"     : "resnet50_size224_param_0.1_9_wood.pth",
+    "ResNet18       (fastest)"      : "resnet18_size224_param_0.1_9_wood.pth",
+}
 
 BACKBONE_OPTIONS = {
-    "Wide-ResNet50  (best accuracy)": str(WEIGHTS_DIR / "wide_resnet50_size224_param_0.1_9_wood.pth"),
-    "ResNet50       (balanced)"     : str(WEIGHTS_DIR / "resnet50_size224_param_0.1_9_wood.pth"),
-    "ResNet18       (fastest)"      : str(WEIGHTS_DIR / "resnet18_size224_param_0.1_9_wood.pth"),
+    label: str(WEIGHTS_DIR / fname)
+    for label, fname in WEIGHT_FILES.items()
 }
 
 # ─────────────────────────────────────────────
@@ -404,17 +424,34 @@ def render_sidebar():
         backbone_label = st.selectbox("Backbone", list(BACKBONE_OPTIONS.keys()), index=0)
         weights_path   = BACKBONE_OPTIONS[backbone_label]
 
-        custom = st.text_input("Custom weights path (optional)", value="")
-        if custom.strip():
-            weights_path = custom.strip()
-
         exists = Path(weights_path).exists()
         st.markdown(
             f"<p style='font-family:IBM Plex Mono,monospace;font-size:11px;"
-            f"color:{'#1d9e75' if exists else '#e24b4a'};margin-top:-6px'>"
-            f"{'✓ weights found' if exists else '✗ file not found'}</p>",
+            f"color:{'#1d9e75' if exists else '#e24b4a'};margin-top:4px'>"
+            f"{'✓ weights found at ' + str(WEIGHTS_DIR) if exists else '✗ not found — upload below'}</p>",
             unsafe_allow_html=True,
         )
+
+        if not exists:
+            st.markdown(
+                "<p style='font-family:IBM Plex Mono,monospace;font-size:10px;"
+                "letter-spacing:.06em;text-transform:uppercase;color:#6b7280;"
+                "margin-top:10px;margin-bottom:4px'>Upload .pth weights file</p>",
+                unsafe_allow_html=True,
+            )
+            uploaded_weights = st.file_uploader(
+                "Upload weights", type=["pth"], label_visibility="collapsed"
+            )
+            if uploaded_weights is not None:
+                save_path = WEIGHTS_DIR / uploaded_weights.name
+                WEIGHTS_DIR.mkdir(parents=True, exist_ok=True)
+                save_path.write_bytes(uploaded_weights.read())
+                st.markdown(
+                    f"<p style='font-family:IBM Plex Mono,monospace;font-size:11px;"
+                    f"color:#1d9e75'>✓ saved · reload to use</p>",
+                    unsafe_allow_html=True,
+                )
+                st.rerun()
 
         _section("Inference")
         threshold = st.slider("Decision threshold", 0.0, 1.0, 0.5, 0.01,
@@ -446,14 +483,14 @@ def render_sidebar():
             unsafe_allow_html=True,
         )
 
-    return weights_path, threshold, alpha, save_outputs, output_dir
+    return weights_path, backbone_label, threshold, alpha, save_outputs, output_dir
 
 
 # ─────────────────────────────────────────────
 # MAIN
 # ─────────────────────────────────────────────
 def main():
-    weights_path, threshold, alpha, save_outputs, output_dir = render_sidebar()
+    weights_path, backbone_label, threshold, alpha, save_outputs, output_dir = render_sidebar()
 
     # Header
     st.markdown("""
@@ -472,6 +509,26 @@ def main():
     with st.spinner("Loading model weights…"):
         try:
             net = load_model(weights_path)
+        except FileNotFoundError:
+            wf = WEIGHT_FILES[backbone_label]
+            st.markdown(f"""
+            <div style="background:#1e0f0f;border-left:3px solid #e24b4a;
+                 border-radius:4px;padding:16px 20px;margin-bottom:24px">
+                <p style="font-family:'IBM Plex Mono',monospace;font-size:13px;
+                   color:#f09595;margin:0 0 10px;font-weight:600">
+                   ⚠ Weights file not found</p>
+                <p style="font-family:'IBM Plex Mono',monospace;font-size:11px;
+                   color:#9ca3af;margin:0 0 6px">
+                   Expected: <code style="color:#f0b429">{weights_path}</code></p>
+                <p style="font-family:'IBM Plex Mono',monospace;font-size:11px;
+                   color:#9ca3af;margin:0 0 10px">
+                   Download <strong style="color:#e8e4dc">{wf}</strong> from the
+                   <a href="https://github.com/ComputermindCorp/assets/releases/tag/v1.0.0"
+                      style="color:#f0b429">ComputermindCorp releases page</a>
+                   and upload it using the sidebar uploader, or commit it to
+                   <code style="color:#f0b429">src/data/weights/</code> in your repo.</p>
+            </div>""", unsafe_allow_html=True)
+            st.stop()
         except Exception as e:
             st.markdown(f"""
             <div style="background:#1e0f0f;border-left:3px solid #e24b4a;
